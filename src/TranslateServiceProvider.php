@@ -4,31 +4,31 @@ declare(strict_types=1);
 
 namespace Rimba\Translate;
 
-use Rimba\Base\BitesServiceProvider;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
+use Rimba\Base\BitesServiceProvider;
 use Rimba\Translate\Enums\Language;
-
 
 class TranslateServiceProvider extends BitesServiceProvider
 {
-    protected string $viewsPath = __DIR__ . '/../resources/views';
-    protected string $iconsPath = __DIR__ . '/../resources/svg';
+    protected string $viewsPath = __DIR__.'/../resources/views';
+
+    protected string $iconsPath = __DIR__.'/../resources/svg';
 
     protected function bootPackage(): void
     {
         $languages = Language::googleTranslateLanguages();
         FilamentView::registerRenderHook(
             PanelsRenderHook::USER_MENU_AFTER,
-            fn() => view('bites::language-switch')
+            fn () => view('bites::language-switch')
         );
         FilamentView::registerRenderHook(
             PanelsRenderHook::SIMPLE_PAGE_END,
-            fn() => view('bites::language-switch')
+            fn () => view('bites::language-switch')
         );
         FilamentView::registerRenderHook(
             PanelsRenderHook::FOOTER,
-            fn(): string => <<<HTML
+            fn (): string => <<<HTML
             <script>
                 window.googleTranslateElementInit = function () {
                     new google.translate.TranslateElement({
@@ -53,9 +53,9 @@ class TranslateServiceProvider extends BitesServiceProvider
         );
 
     }
+
     protected function registerPackage(): void
     {
         //
     }
-
 }

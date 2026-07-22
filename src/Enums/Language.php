@@ -50,5 +50,4 @@ enum Language: string
             array_column(self::cases(), 'value')
         );
     }
-
 }
