@@ -6,7 +6,7 @@ namespace Rimba\Translate;
 
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
-use Rimba\Base\BitesServiceProvider;
+use Rimba\Base\Services\BitesServiceProvider;
 use Rimba\Translate\Enums\Language;
 
 class TranslateServiceProvider extends BitesServiceProvider
