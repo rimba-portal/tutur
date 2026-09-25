@@ -6,7 +6,6 @@ namespace Rimba\Translate;
 
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
-use Illuminate\Contracts\View\Factory;
 use Rimba\Base\Services\BitesServiceProvider;
 use Rimba\Translate\Enums\Language;
 
@@ -21,11 +20,11 @@ class TranslateServiceProvider extends BitesServiceProvider
         $languages = Language::googleTranslateLanguages();
         FilamentView::registerRenderHook(
             PanelsRenderHook::USER_MENU_AFTER,
-            fn (): Factory|\Illuminate\Contracts\View\View => view('bites::language-switch')
+            fn () => view('bites::language-switch')
         );
         FilamentView::registerRenderHook(
             PanelsRenderHook::SIMPLE_PAGE_END,
-            fn (): Factory|\Illuminate\Contracts\View\View => view('bites::language-switch')
+            fn () => view('bites::language-switch')
         );
         FilamentView::registerRenderHook(
             PanelsRenderHook::FOOTER,
