@@ -4,105 +4,59 @@ declare(strict_types=1);
 
 namespace Rimba\Translate;
 
-use Illuminate\Console\Command;
-use ReflectionClass;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Contracts\View\Factory;
 use Rimba\Base\Services\BitesServiceProvider;
-use Rimba\Who\Actions\AuthenticateLocalUser;
-use Rimba\Who\Contracts\FaceVerifierContract;
-use Rimba\Who\Contracts\IdentityAuthenticatorContract;
-use Rimba\Who\Contracts\PanelAccessResolverContract;
-use Rimba\Who\Contracts\SecurityContextContract;
-use Rimba\Who\Contracts\StaffResolverContract;
-use Rimba\Who\Enums\AuthenticationStatus;
-use Rimba\Who\Services\FaceAuthService;
-use Rimba\Who\Services\IdentityAuthenticatorService;
-use Rimba\Who\Services\IdentityResolverService;
-use Rimba\Who\Services\PanelAccessService;
-use Rimba\Who\Services\SecurityContextService;
-use Rimba\Who\Services\StaffResolverService;
-use Rimba\Who\Support\AuthenticationResult;
-use Rimba\Who\Support\ExternalIdentity;
+use Rimba\Translate\Enums\Language;
 
 class TranslateServiceProvider extends BitesServiceProvider
 {
-    protected string $configFile = __DIR__.'/../config/bites.php';
-
     protected string $viewsPath = __DIR__.'/../resources/views';
 
     protected string $iconsPath = __DIR__.'/../resources/svg';
 
     protected function bootPackage(): void
     {
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        if ($this->app->runningInConsole()) {
-            $this->registerCommandsFromDirectory();
-        }
-
-        $this->publishes([__DIR__.'/../resources/assets/models' => public_path('models')], 'assets');
-        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        $languages = Language::googleTranslateLanguages();
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::USER_MENU_AFTER,
+            fn (): Factory|\Illuminate\Contracts\View\View => view('bites::language-switch')
+        );
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::SIMPLE_PAGE_END,
+            fn (): Factory|\Illuminate\Contracts\View\View => view('bites::language-switch')
+        );
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::FOOTER,
+            fn (): string => <<<HTML
+            <script>
+                window.googleTranslateElementInit = function () {
+                    new google.translate.TranslateElement({
+                        pageLanguage: 'en',
+                        layout: google.translate.TranslateElement.InlineLayout.VERTICAL,
+                        autoDisplay: false,
+                        includedLanguages: '{$languages}'
+                    }, 'google_translate_element');
+                };
+                window.triggerGoogleTranslate = function (langCode) {
+                    const select = document.querySelector('.goog-te-combo');
+                    if (! select) {
+                        console.log('Google Translate select not found');
+                        return;
+                    }
+                    select.value = langCode;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                };
+            </script>
+            <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+            HTML
+        );
 
     }
 
     protected function registerPackage(): void
     {
-        $this->app->singleton('bites_auth.authenticator.local', fn ($app): IdentityAuthenticatorContract => new class($app->make(AuthenticateLocalUser::class)) implements IdentityAuthenticatorContract
-        {
-            public function __construct(private AuthenticateLocalUser $authenticateLocalUser) {}
-
-            public function name(): string
-            {
-                return 'local';
-            }
-
-            public function authenticateExisting(string $identifier, string $password): AuthenticationResult
-            {
-                return $this->authenticateLocalUser->handle($identifier, $password);
-            }
-
-            public function authenticateExternal(ExternalIdentity $identity, string $password): AuthenticationResult
-            {
-                return new AuthenticationResult(AuthenticationStatus::NotFound, 'local', reason: 'unsupported_external_identity');
-            }
-        });
-        $this->app->singleton(IdentityResolverService::class, fn ($app): IdentityResolverService => new IdentityResolverService($this->resolveTagged($app, 'bites_auth.external-resolver')));
-        $this->app->singleton(IdentityAuthenticatorService::class, fn ($app): IdentityAuthenticatorService => new IdentityAuthenticatorService($this->resolveTagged($app, 'bites_auth.authenticator')));
-        $this->app->tag(['bites_auth.authenticator.local'], 'bites_auth.authenticator');
-        $this->app->bind(SecurityContextContract::class, SecurityContextService::class);
-        $this->app->bind(StaffResolverContract::class, StaffResolverService::class);
-        $this->app->bind(PanelAccessResolverContract::class, PanelAccessService::class);
-        $this->app->bind(FaceVerifierContract::class, FaceAuthService::class);
-
-    }
-
-    /**
-     * Dynamically discover and boot all commands inside the package directory.
-     */
-    protected function registerCommandsFromDirectory()
-    {
-        $commandDir = __DIR__.'/Console/Commands';
-        if (! is_dir($commandDir)) {
-            return;
-        }
-
-        $commands = [];
-        foreach (glob($commandDir.'/*.php') as $file) {
-            $className = basename($file, '.php');
-            $class = 'Rimba\\Who\\Console\\Commands\\'.$className;
-            if (class_exists($class) && is_subclass_of($class, Command::class)) {
-                $reflection = new ReflectionClass($class);
-                if (! $reflection->isAbstract()) {
-                    $commands[] = $class;
-                }
-            }
-        }
-
-        if ($commands !== []) {
-            $this->commands($commands);
-        }
-    }
-
-    private function resolveTagged($app, string $tag): iterable
-    {
-        return $app->tagged($tag);
+        //
     }
 }
